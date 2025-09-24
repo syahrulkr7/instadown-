@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaDown - Download Konten Instagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <!-- Chart.js for Statistics Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #8B5CF6;
+            --secondary: #F59E0B;
+            --accent: #10B981;
+        }
+        
+        * {
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Custom Instagram Logo Styles  */
+        .instagram-logo {
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 30% 110%, #ffdb8b 0%, #ee653d 25%, #d42e81 50%, #a237b6 75%, #3e57bc 100%);
+            border-radius: 11px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .instagram-logo::after {
+            content: "";
+            position: absolute;
+            width: 65%;
+            height: 65%;
+            border: 2px solid #fff;
+            border-radius: 8px;
+        }
+        
+        .instagram-logo::before {
+            content: "";
+            position: absolute;
+            width: 35%;
+            height: 35%;
+            border: 2px solid #fff;
+            border-radius: 50%;
+        }
+        
+        .instagram-logo span {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            top: 8px;
+            right: 8px;
+            z-index: 10;
+        }
+        /* End of Instagram Logo Styles */
+
+        .page {
+            display: none;
+            flex: 1;
+        }
+        
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .nav-icon {
+            position: relative;
+            padding: 10px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-icon.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: #8B5CF6;
+        }
+        
+        .nav-icon:hover {
+            transform: translateY(-3px);
+        }
+        
+        .tooltip {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .nav-icon:hover .tooltip {
+            opacity: 1;
+        }
+        
+        .video-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
+        }
+        
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .video-container:hover .video-controls {
+            opacity: 1;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .progress {
+            height: 100%;
+            background: #8B5CF6;
+            width: 0%;
+            transition: width 0.1s;
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px var(--primary); }
+            50% { box-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary); }
+            100% { box-shadow: 0 0 5px var(--primary); }
+        }
+        
+        .btn-hover-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-hover-effect::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s;
+        }
+        
+        .btn-hover-effect:hover::after {
+            width: 300px;
+            height: 300px;
+            top: -50px;
+            left: -50px;
+        }
+        
+        .footer-wave {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            line-height: 0;
+        }
+        
+        .footer-wave svg {
+            position: relative;
+            display: block;
+            width: calc(100% + 1.3px);
+            height: 50px;
+        }
+        
+        .footer-wave .shape-fill {
+            fill: #1F2937;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+        
+        .stat-card {
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        /* Loading animation */
+        .loader {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        
+        .loader div {
+            position: absolute;
+            border: 4px solid #8B5CF6;
+            opacity: 1;
+            border-radius: 50%;
+            animation: loader 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+        }
+        
+        .loader div:nth-child(2) {
+            animation-delay: -0.5s;
+        }
+        
+        @keyframes loader {
+            0% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                top: 0px;
+                left: 0px;
+                width: 72px;
+                height: 72px;
+                opacity: 0;
+            }
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .nav-icons {
+                justify-content: space-around;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .input-group input {
+                margin-bottom: 1rem;
+            }
+            
+            .nav-icon {
+                padding: 8px;
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Header dengan Navigasi Ikon -->
+    <header class="glass-effect py-4 px-6 sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <!-- Custom Instagram Logo -->
+                <div class="instagram-logo floating">
+                    <span></span>
+                </div>
+                <h1 class="logo-text text-2xl font-bold bg-gradient-to-r from-purple-500 to-orange-400 bg-clip-text text-transparent">InstaDown</h1>
+            </div>
+            <nav>
+                <div class="flex space-x-6 nav-icons">
+                    <a href="#beranda" class="nav-icon active" data-page="beranda">
+                        <i class="fas fa-home text-xl"></i>
+                        <span class="tooltip">Beranda</span>
+                    </a>
+                    <a href="#utama" class="nav-icon" data-page="utama">
+                        <i class="fas fa-download text-xl"></i>
+                        <span class="tooltip">Download</span>
+                    </a>
+                    <a href="#statistik" class="nav-icon" data-page="statistik">
+                        <i class="fas fa-chart-bar text-xl"></i>
+                        <span class="tooltip">Statistik</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Halaman Beranda -->
+    <section id="beranda" class="page active">
+        <div class="container mx-auto px-4 py-12 text-center">
+            <div class="max-w-4xl mx-auto">
+                <div class="floating mb-8">
+                    <div class="instagram-logo" style="width: 120px; height: 120px; margin: 0 auto;">
+                        <span></span>
+                    </div>
+                </div>
+                <h2 class="text-4xl md:text-6xl font-bold mb-6">Selamat Datang di InstaDown</h2>
+                <p class="text-xl text-gray-300 mb-8">Download konten Instagram dengan mudah dan cepat. Nikmati pengalaman unduh yang lebih baik dengan preview video sebelum mengunduh.</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="mulaiBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 py-3 px-6 rounded-xl font-semibold btn-hover-effect">
+                        <i class="fas fa-rocket mr-2"></i>Mulai Sekarang
+                    </button>
+                </div>
+                
+                <!-- Statistik Cepat -->
+                <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="glass-effect rounded-xl p-4 text-center stat-card">
+                        <div class="text-2xl font-bold text-purple-500" id="quickTotalDownloads">0</div>
+                        <p class="text-gray-400 text-sm">Total Download</p>
+                    </div>
+                    <div class="glass-effect rounded-xl p-4 text-center stat-card">
+                        <div class="text-2xl font-bold text-green-500" id="quickVisitors">0</div>
+                        <p class="text-gray-400 text-sm">Pengunjung</p>
+                    </div>
+                    <div class="glass-effect rounded-xl p-4 text-center stat-card">
+                        <div class="text-2xl font-bold text-blue-500" id="quickSuccessRate">0%</div>
+                        <p class="text-gray-400 text-sm">Tingkat Keberhasilan</p>
+                    </div>
+                    <div class="glass-effect rounded-xl p-4 text-center stat-card">
+                        <div class="text-2xl font-bold text-orange-500" id="quickToday">0</div>
+                        <p class="text-gray-400 text-sm">Hari Ini</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Halaman Utama (Download) -->
+    <section id="utama" class="page">
+        <div class="container mx-auto px-4 py-8">
+            <div class="max-w-3xl mx-auto text-center mb-8">
+                <h2 class="text-3xl font-bold mb-4">Download Konten Instagram</h2>
+                <p class="text-gray-300">Salin link Instagram, tempel di sini, dan nikmati preview video sebelum mendownloadnya.</p>
+            </div>
+            
+            <!-- Input Section -->
+            <div class="glass-effect rounded-2xl p-6 mb-8">
+                <div class="input-group flex">
+                    <input type="text" id="instagramUrl" placeholder="Tempel link Instagram di sini (contoh: https://www.instagram.com/p/ABC123/)" 
+                           class="flex-grow py-3 px-4 rounded-l-xl bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <button id="downloadBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 py-3 px-6 rounded-r-xl font-semibold btn-hover-effect">
+                        <i class="fas fa-download mr-2"></i>Download
+                    </button>
+                </div>
+                <div id="urlError" class="text-red-400 text-sm mt-2 hidden">URL Instagram tidak valid! Pastikan format URL benar.</div>
+            </div>
+            
+            <!-- Video Preview Section -->
+            <div id="videoPreview" class="hidden mb-8">
+                <h3 class="text-xl font-semibold mb-4">Preview Video</h3>
+                <div class="video-container">
+                    <video id="previewVideo" class="w-full" controls>
+                        Browser Anda tidak mendukung tag video.
+                    </video>
+                    <div class="video-controls">
+                        <div class="progress-bar">
+                            <div class="progress"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex space-x-4">
+                                <button id="playPauseBtn" class="text-white">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button id="muteBtn" class="text-white">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <span id="currentTime" class="text-white">0:00</span>
+                                <span class="text-white">/</span>
+                                <span id="duration" class="text-white">0:00</span>
+                            </div>
+                            <button id="fullscreenBtn" class="text-white">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-center">
+                    <a id="downloadLink" href="#" class="bg-gradient-to-r from-green-500 to-teal-500 py-2 px-6 rounded-lg font-semibold btn-hover-effect">
+                        <i class="fas fa-download mr-2"></i>Download Video
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Loading Animation -->
+            <div id="loadingAnimation" class="hidden mb-8">
+                <div class="flex flex-col items-center">
+                    <div class="loader">
+                        <div></div>
+                        <div></div>
+                    </div>
+                    <p class="text-lg mt-4">Memproses permintaan Anda...</p>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="hidden glass-effect rounded-2xl p-6 mb-8 text-center">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Terjadi Kesalahan</h3>
+                <p id="errorText" class="text-gray-300">Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi.</p>
+                <button id="retryBtn" class="mt-4 bg-gradient-to-r from-purple-600 to-pink-600 py-2 px-6 rounded-lg font-semibold">
+                    <i class="fas fa-redo mr-2"></i>Coba Lagi
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Halaman Statistik -->
+    <section id="statistik" class="page">
+        <div class="container mx-auto px-4 py-12">
+            <h2 class="text-3xl font-bold text-center mb-2">Statistik Real-Time</h2>
+            <p class="text-gray-400 text-center mb-8">Data diperbarui secara real-time</p>
+            
+            <!-- Statistik Utama -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-effect rounded-xl p-4 text-center stat-card">
+                    <div class="text-2xl font-bold text-purple-500" id="totalVisitors">0</div>
+                    <p class="text-gray-400 text-sm">Total Pengunjung</p>
+                    <div class="text-xs text-green-500 mt-1" id="visitorChange">+0 hari ini</div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 text-center stat-card">
+                    <div class="text-2xl font-bold text-green-500" id="totalDownloads">0</div>
+                    <p class="text-gray-400 text-sm">Total Download</p>
+                    <div class="text-xs text-green-500 mt-1" id="downloadChange">+0 hari ini</div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 text-center stat-card">
+                    <div class="text-2xl font-bold text-blue-500" id="successRate">0%</div>
+                    <p class="text-gray-400 text-sm">Tingkat Keberhasilan</p>
+                    <div class="text-xs text-green-500 mt-1">Rata-rata: 95%</div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 text-center stat-card">
+                    <div class="text-2xl font-bold text-orange-500" id="activeNow">1</div>
+                    <p class="text-gray-400 text-sm">Sedang Aktif</p>
+                    <div class="text-xs text-green-500 mt-1">Anda</div>
+                </div>
+            </div>
+            
+            <!-- Grafik -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="glass-effect rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-4">Trend Download 7 Hari Terakhir</h3>
+                    <div class="chart-container">
+                        <canvas id="downloadChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-effect rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-4">Sumber Pengunjung</h3>
+                    <div class="chart-container">
+                        <canvas id="trafficChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Aktivitas Terbaru & Statistik Global -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-effect rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-4">Aktivitas Terbaru</h3>
+                    <div id="recentActivity" class="space-y-3 max-h-60 overflow-y-auto">
+                        <!-- Aktivitas akan ditampilkan di sini -->
+                    </div>
+                </div>
+                <div class="glass-effect rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-4">Statistik Global Instagram</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Foto diupload per hari</span>
+                            <span class="font-semibold">+95 juta</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Pengguna aktif bulanan</span>
+                            <span class="font-semibold">+2.4 miliar</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Waktu penggunaan harian</span>
+                            <span class="font-semibold">~30 menit</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Suka diberikan per hari</span>
+                            <span class="font-semibold">+4.2 miliar</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-xs text-gray-500">Sumber: Internet Live Stats </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer yang Lebih Elegan -->
+    <footer class="bg-gray-900 mt-auto relative pt-16 pb-8">
+        <div class="footer-wave">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+            </svg>
+        </div>
+        <div class="container mx-auto px-4 pt-16 pb-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0 text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start space-x-2 mb-4">
+                        <div class="instagram-logo">
+                            <span></span>
+                        </div>
+                        <h3 class="text-xl font-bold bg-gradient-to-r from-purple-500 to-orange-400 bg-clip-text text-transparent">InstaDown</h3>
+                    </div>
+                    <p class="text-gray-400 max-w-md">Platform download konten Instagram terbaik dengan preview video dan antarmuka yang user-friendly.</p>
+                </div>
+                
+                <div class="flex space-x-6 mb-6 md:mb-0">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors text-xl">
+                        <i class="fab fa-github"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-500 text-sm mb-4 md:mb-0">&copy; 2025 InstaDown. All rights reserved.</p>
+                <div class="footer-links flex space-x-6">
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Inisialisasi Howler.js untuk efek suara
+        const successSound = new Howl({
+            src: ['https://assets.mixkit.co/sfx/preview/mixkit-winning-chime-2015.mp3'],
+            volume: 0.5
+        });
+        
+        const errorSound = new Howl({
+            src: ['https://assets.mixkit.co/sfx/preview/mixkit-warning-alarm-buzzer-2951.mp3'],
+            volume: 0.5
+        });
+        
+        const clickSound = new Howl({
+            src: ['https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3'],
+            volume: 0.3
+        });
+
+        // Sistem Statistik yang Diperbarui
+        let stats = {
+            totalDownloads: 0,
+            successfulDownloads: 0,
+            failedDownloads: 0,
+            todayDownloads: 0,
+            lastDownloadDate: null,
+            recentActivity: [],
+            totalVisitors: 0,
+            todayVisitors: 0,
+            visitorHistory: [],
+            downloadHistory: Array(7).fill(0),
+            trafficSources: {
+                direct: 45,
+                search: 30,
+                social: 20,
+                referral: 5
+            }
+        };
+
+        // Elemen DOM
+        const instagramUrlInput = document.getElementById('instagramUrl');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const urlError = document.getElementById('urlError');
+        const loadingAnimation = document.getElementById('loadingAnimation');
+        const videoPreview = document.getElementById('videoPreview');
+        const previewVideo = document.getElementById('previewVideo');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        const progressBar = document.querySelector('.progress-bar');
+        const progress = document.querySelector('.progress');
+        const downloadLink = document.getElementById('downloadLink');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const retryBtn = document.getElementById('retryBtn');
+        const mulaiBtn = document.getElementById('mulaiBtn');
+        
+        // Elemen statistik
+        const totalDownloadsEl = document.getElementById('totalDownloads');
+        const successfulDownloadsEl = document.getElementById('successfulDownloads');
+        const failedDownloadsEl = document.getElementById('failedDownloads');
+        const todayDownloadsEl = document.getElementById('todayDownloads');
+        const resetStatsBtn = document.getElementById('resetStats');
+        const recentActivityEl = document.getElementById('recentActivity');
+        
+        // Navigasi halaman
+        const navIcons = document.querySelectorAll('.nav-icon');
+        const pages = document.querySelectorAll('.page');
+
+        // URL yang akan dicoba
+        let currentVideoUrl = '';
+
+        // Inisialisasi grafik
+        let downloadChart, trafficChart;
+
+        // Fungsi untuk menginisialisasi grafik
+        function initializeCharts() {
+            const downloadCtx = document.getElementById('downloadChart').getContext('2d');
+            downloadChart = new Chart(downloadCtx, {
+                type: 'line',
+                data: {
+                    labels: ['6 hari lalu', '5 hari lalu', '4 hari lalu', '3 hari lalu', '2 hari lalu', 'Kemarin', 'Hari Ini'],
+                    datasets: [{
+                        label: 'Download per Hari',
+                        data: stats.downloadHistory,
+                        borderColor: '#8B5CF6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#fff'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#fff'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+
+            const trafficCtx = document.getElementById('trafficChart').getContext('2d');
+            trafficChart = new Chart(trafficCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Langsung', 'Pencarian', 'Media Sosial', 'Rujukan'],
+                    datasets: [{
+                        data: [
+                            stats.trafficSources.direct,
+                            stats.trafficSources.search,
+                            stats.trafficSources.social,
+                            stats.trafficSources.referral
+                        ],
+                        backgroundColor: [
+                            '#8B5CF6',
+                            '#10B981',
+                            '#F59E0B',
+                            '#EF4444'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#fff',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fungsi untuk memperbarui statistik pengunjung
+        function updateVisitorStats() {
+            // Tambah pengunjung baru
+            stats.totalVisitors++;
+            stats.todayVisitors++;
+            
+            // Perbarui history pengunjung
+            const today = new Date().toDateString();
+            const todayIndex = stats.visitorHistory.findIndex(day => day.date === today);
+            
+            if (todayIndex === -1) {
+                // Hari baru, reset history jika perlu
+                if (stats.visitorHistory.length >= 30) {
+                    stats.visitorHistory.shift();
+                }
+                stats.visitorHistory.push({ date: today, count: 1 });
+            } else {
+                stats.visitorHistory[todayIndex].count++;
+            }
+            
+            // Perbarui tampilan
+            updateStatsDisplay();
+        }
+
+        // Fungsi untuk memperbarui statistik download
+        function updateDownloadStats(success = true) {
+            stats.totalDownloads++;
+            stats.todayDownloads++;
+            
+            if (success) {
+                stats.successfulDownloads++;
+            } else {
+                stats.failedDownloads++;
+            }
+            
+            // Perbarui history download (7 hari terakhir)
+            stats.downloadHistory[6] = stats.todayDownloads;
+            
+            // Tambah aktivitas
+            addActivity('Download', success ? 'Berhasil' : 'Gagal');
+            
+            // Perbarui grafik
+            if (downloadChart) {
+                downloadChart.update();
+            }
+            
+            updateStatsDisplay();
+        }
+
+        // Fungsi untuk memperbarui tampilan statistik
+        function updateStatsDisplay() {
+            // Update elemen statistik utama
+            document.getElementById('totalVisitors').textContent = stats.totalVisitors.toLocaleString();
+            document.getElementById('totalDownloads').textContent = stats.totalDownloads.toLocaleString();
+            document.getElementById('successRate').textContent = stats.totalDownloads > 0 ? 
+                Math.round((stats.successfulDownloads / stats.totalDownloads) * 100) + '%' : '0%';
+            document.getElementById('activeNow').textContent = '1'; // Anda selalu aktif
+            
+            // Update statistik cepat di beranda
+            document.getElementById('quickTotalDownloads').textContent = stats.totalDownloads.toLocaleString();
+            document.getElementById('quickVisitors').textContent = stats.totalVisitors.toLocaleString();
+            document.getElementById('quickSuccessRate').textContent = stats.totalDownloads > 0 ? 
+                Math.round((stats.successfulDownloads / stats.totalDownloads) * 100) + '%' : '0%';
+            document.getElementById('quickToday').textContent = stats.todayDownloads.toLocaleString();
+            
+            // Update perubahan hari ini
+            document.getElementById('visitorChange').textContent = `+${stats.todayVisitors} hari ini`;
+            document.getElementById('downloadChange').textContent = `+${stats.todayDownloads} hari ini`;
+            
+            // Update aktivitas terbaru
+            updateRecentActivity();
+            
+            // Simpan statistik
+            saveStats();
+        }
+
+        // Fungsi untuk menambahkan aktivitas baru
+        function addActivity(type, status) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            stats.recentActivity.unshift({
+                type: type,
+                status: status,
+                time: timeString,
+                timestamp: now.getTime()
+            });
+            
+            // Batasi hanya 10 aktivitas terbaru
+            if (stats.recentActivity.length > 10) {
+                stats.recentActivity = stats.recentActivity.slice(0, 10);
+            }
+        }
+
+        // Fungsi untuk memperbarui tampilan aktivitas terbaru
+        function updateRecentActivity() {
+            const activityContainer = document.getElementById('recentActivity');
+            activityContainer.innerHTML = '';
+            
+            if (stats.recentActivity.length === 0) {
+                activityContainer.innerHTML = '<p class="text-gray-400 text-center">Belum ada aktivitas</p>';
+                return;
+            }
+            
+            stats.recentActivity.forEach(activity => {
+                const activityEl = document.createElement('div');
+                activityEl.className = 'flex justify-between items-center p-2 bg-gray-800 rounded-lg';
+                activityEl.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas ${activity.status === 'Berhasil' ? 'fa-check-circle text-green-500' : 'fa-times-circle text-red-500'} mr-2"></i>
+                        <span class="text-sm">${activity.type}</span>
+                    </div>
+                    <span class="text-gray-400 text-xs">${activity.time}</span>
+                `;
+                activityContainer.appendChild(activityEl);
+            });
+        }
+
+        // Muat statistik dari localStorage
+        function loadStats() {
+            const savedStats = localStorage.getItem('instadownStats');
+            if (savedStats) {
+                stats = JSON.parse(savedStats);
+                
+                // Pastikan properti baru ada
+                if (!stats.totalVisitors) stats.totalVisitors = 0;
+                if (!stats.todayVisitors) stats.todayVisitors = 0;
+                if (!stats.visitorHistory) stats.visitorHistory = [];
+                if (!stats.downloadHistory) stats.downloadHistory = Array(7).fill(0);
+                if (!stats.trafficSources) stats.trafficSources = {
+                    direct: 45, search: 30, social: 20, referral: 5
+                };
+            }
+        }
+
+        // Simpan statistik ke localStorage
+        function saveStats() {
+            // Reset statistik hari ini jika sudah hari baru
+            const today = new Date().toDateString();
+            if (stats.lastDownloadDate !== today) {
+                stats.todayDownloads = 0;
+                stats.todayVisitors = 0;
+                stats.lastDownloadDate = today;
+                
+                // Geser history download untuk hari baru
+                stats.downloadHistory = [...stats.downloadHistory.slice(1), 0];
+            }
+            
+            localStorage.setItem('instadownStats', JSON.stringify(stats));
+        }
+
+        // Validasi URL Instagram
+        function isValidInstagramUrl(url) {
+            const instagramRegex = /https?:\/\/(www\.)?instagram\.com\/(p|reel|story|tv)\/([a-zA-Z0-9_-]+)\/?/;
+            return instagramRegex.test(url);
+        }
+
+        // Format waktu video (detik ke menit:detik)
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Tampilkan notifikasi
+        function showNotification(title, text, icon = 'success') {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        }
+
+        // Tampilkan error
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            videoPreview.classList.add('hidden');
+        }
+
+        // Sembunyikan error
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        // Download konten Instagram
+        async function downloadInstagramContent(url) {
+            // Encode URL untuk API
+            const encodedUrl = encodeURIComponent(url);
+            const apiUrl = `https://api.siputzx.my.id/api/d/igdl?url=${encodedUrl}`;
+            
+            try {
+                // Sembunyikan error jika ada
+                hideError();
+                
+                // Tampilkan animasi loading
+                loadingAnimation.classList.remove('hidden');
+                downloadBtn.disabled = true;
+                
+                // Panggil API
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Sembunyikan animasi loading
+                loadingAnimation.classList.add('hidden');
+                downloadBtn.disabled = false;
+                
+                if (data.status && data.data && data.data.length > 0 && data.data[0].url) {
+                    // Perbarui statistik
+                    updateDownloadStats(true);
+                    
+                    // Tampilkan preview video
+                    showVideoPreview(data.data[0].url);
+                    successSound.play();
+                    showNotification('Berhasil!', 'Konten Instagram berhasil diunduh.', 'success');
+                } else {
+                    throw new Error('Tidak ada data video yang ditemukan');
+                }
+            } catch (error) {
+                // Sembunyikan animasi loading
+                loadingAnimation.classList.add('hidden');
+                downloadBtn.disabled = false;
+                
+                // Perbarui statistik
+                updateDownloadStats(false);
+                
+                // Tampilkan error
+                showError(`Gagal mengunduh konten: ${error.message}. Pastikan URL valid dan coba lagi.`);
+                errorSound.play();
+                console.error('Error:', error);
+            }
+        }
+
+        // Tampilkan preview video
+        function showVideoPreview(videoUrl) {
+            currentVideoUrl = videoUrl;
+            
+            // Setel sumber video
+            previewVideo.src = videoUrl;
+            downloadLink.href = videoUrl;
+            downloadLink.download = 'instagram_video.mp4';
+            
+            // Tampilkan section preview video
+            videoPreview.classList.remove('hidden');
+            
+            // Scroll ke video preview
+            videoPreview.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Navigasi halaman
+        function switchPage(pageId) {
+            // Sembunyikan semua halaman
+            pages.forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Tampilkan halaman yang dipilih
+            document.getElementById(pageId).classList.add('active');
+            
+            // Perbarui status navigasi
+            navIcons.forEach(icon => {
+                icon.classList.remove('active');
+                if (icon.getAttribute('data-page') === pageId) {
+                    icon.classList.add('active');
+                }
+            });
+        }
+
+        // Event Listeners untuk navigasi
+        navIcons.forEach(icon => {
+            icon.addEventListener('click', function(e) {
+                e.preventDefault();
+                clickSound.play();
+                const pageId = this.getAttribute('data-page');
+                switchPage(pageId);
+            });
+        });
+
+        // Event Listeners untuk video controls
+        previewVideo.addEventListener('loadedmetadata', function() {
+            durationEl.textContent = formatTime(previewVideo.duration);
+        });
+
+        previewVideo.addEventListener('timeupdate', function() {
+            currentTimeEl.textContent = formatTime(previewVideo.currentTime);
+            const progressPercent = (previewVideo.currentTime / previewVideo.duration) * 100;
+            progress.style.width = `${progressPercent}%`;
+        });
+
+        playPauseBtn.addEventListener('click', function() {
+            if (previewVideo.paused) {
+                previewVideo.play();
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                previewVideo.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        });
+
+        muteBtn.addEventListener('click', function() {
+            previewVideo.muted = !previewVideo.muted;
+            muteBtn.innerHTML = previewVideo.muted ? 
+                '<i class="fas fa-volume-mute"></i>' : 
+                '<i class="fas fa-volume-up"></i>';
+        });
+
+        fullscreenBtn.addEventListener('click', function() {
+            if (previewVideo.requestFullscreen) {
+                previewVideo.requestFullscreen();
+            } else if (previewVideo.webkitRequestFullscreen) {
+                previewVideo.webkitRequestFullscreen();
+            } else if (previewVideo.msRequestFullscreen) {
+                previewVideo.msRequestFullscreen();
+            }
+        });
+
+        progressBar.addEventListener('click', function(e) {
+            const rect = progressBar.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            previewVideo.currentTime = percent * previewVideo.duration;
+        });
+
+        // Event Listeners lainnya
+        downloadBtn.addEventListener('click', function() {
+            clickSound.play();
+            const url = instagramUrlInput.value.trim();
+            
+            if (!url) {
+                urlError.textContent = 'URL tidak boleh kosong!';
+                urlError.classList.remove('hidden');
+                instagramUrlInput.focus();
+                return;
+            }
+            
+            if (!isValidInstagramUrl(url)) {
+                urlError.textContent = 'URL Instagram tidak valid! Pastikan format URL benar. Contoh: https://www.instagram.com/p/ABC123/';
+                urlError.classList.remove('hidden');
+                instagramUrlInput.focus();
+                return;
+            }
+            
+            urlError.classList.add('hidden');
+            downloadInstagramContent(url);
+        });
+
+        instagramUrlInput.addEventListener('input', function() {
+            if (urlError.classList.contains('hidden')) return;
+            
+            const url = instagramUrlInput.value.trim();
+            if (url && isValidInstagramUrl(url)) {
+                urlError.classList.add('hidden');
+            }
+        });
+
+        retryBtn.addEventListener('click', function() {
+            clickSound.play();
+            hideError();
+            const url = instagramUrlInput.value.trim();
+            if (url) {
+                downloadInstagramContent(url);
+            }
+        });
+
+        mulaiBtn.addEventListener('click', function() {
+            clickSound.play();
+            switchPage('utama');
+        });
+
+        // Inisialisasi
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            updateVisitorStats(); // Tambah pengunjung saat halaman dimuat
+            initializeCharts();
+            updateStatsDisplay();
+            
+            // Set interval untuk update real-time (simulasi)
+            setInterval(() => {
+                // Simulasi perubahan kecil pada statistik
+                if (Math.random() > 0.7) {
+                    stats.trafficSources.direct += Math.floor(Math.random() * 2);
+                    stats.trafficSources.search += Math.floor(Math.random() * 2);
+                    if (trafficChart) trafficChart.update();
+                }
+            }, 10000); // Update setiap 10 detik
+            
+            // Set halaman aktif pertama kali
+            switchPage('beranda');
+        });
+    </script>
+</body>
+</html>
